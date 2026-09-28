@@ -207,3 +207,21 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
 .legend-note { font-size: 11px; color: var(--faint); }
 .sw.z1 { background: #3a3833; }
 .key.next .main, .key.next .sub { color: var(--accent-ink) !important; }
+
+/* ── 머리 조작부와 키 진도를 한 줄로 ── */
+.top { row-gap: 10px; }
+.controls { gap: 10px; flex-wrap: nowrap; }
+.controls .ctl { gap: 6px; }
+#practice-ctls { gap: 10px; flex-wrap: nowrap; }
+.seg { padding: 2px; }
+.seg button { padding: 6px 8px; min-height: 32px; font-size: 12.5px; gap: 4px; }
+.seg button .lock { width: 11px; height: 11px; }
+.select { padding: 6px 6px; font-size: 12.5px; }
+.controls .btn { padding-inline: 10px; }
+.chips { flex-wrap: nowrap; gap: 4px; }
+.chip { flex: 1 1 0; min-width: 0; width: auto; max-width: 44px; padding-inline: 2px; }
+@media (max-width: 1100px) {
+  .controls, #practice-ctls { flex-wrap: wrap; }
+  .chips { flex-wrap: wrap; }
+  .chip { flex: 0 0 34px; }
+}
