@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>신세벌 타자</title>
+<meta name="description" content="신세벌식 P2 자판을 기준 자리부터 익히는 타자 연습. 키와 손가락을 짚어 주고, 키별 숙련도에 맞춰 낱말과 짧은 글을 냅니다.">
+<meta property="og:title" content="신세벌 타자">
+<meta property="og:description" content="신세벌식 P2 자판 타자 연습 — 키·손가락 안내, 줄 단위 해금, 키별 통계">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+</head>
+<body>
+<div id="app" class="app">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-name">신세벌 타자</span>
+      <span class="brand-sub">신세벌식 P2 · 기본 배열</span>
+    </div>
+    <div class="controls">
+      <div class="ctl" id="practice-ctls">
+        <div class="ctl">
+          <span class="ctl-label" id="mode-label">연습</span>
+          <div class="seg" id="mode-seg" role="group" aria-labelledby="mode-label"></div>
+        </div>
+        <div class="ctl" id="unlock-ctl">
+          <span class="ctl-label" id="unlock-label">해금</span>
+          <div class="seg" id="unlock-seg" role="group" aria-labelledby="unlock-label"></div>
+        </div>
+        <div class="ctl" id="stage-ctl">
+          <span class="ctl-label" id="stage-label">단계</span>
+          <div class="seg" id="stage-seg" role="group" aria-labelledby="stage-label"></div>
+        </div>
+        <div class="ctl" id="source-ctl">
+          <span class="ctl-label" id="source-label">글감</span>
+          <div class="seg" id="source-seg" role="group" aria-labelledby="source-label"></div>
+          <button type="button" class="btn" id="edit-mine">내 글감 편집</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="ctl-label" id="layout-label">배열</span>
+        <div class="seg" id="layout-seg" role="group" aria-labelledby="layout-label"></div>
+      </div>
+      <div class="ctl">
+        <label class="ctl-label" for="target">목표</label>
+        <select id="target" class="select">
+          <option value="100">100타</option>
+          <option value="150">150타</option>
+          <option value="200">200타</option>
+          <option value="250">250타</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-strong" id="view-toggle" aria-pressed="false">통계</button>
+    </div>
+  </header>
+
+  <p class="notice" id="touch-notice" hidden>이 연습은 실제 키보드가 있어야 합니다. 태블릿이라면 블루투스 키보드를 연결해 주세요.</p>
+
+  <main id="practice">
+    <section class="meta">
+      <span class="meta-k">지표</span>
+      <div class="meta-v metrics" id="metrics"></div>
+      <span class="meta-k">키 진도</span>
+      <div class="meta-v">
+        <div class="chips" id="chips"></div>
+        <p class="chips-hint" id="chips-hint" hidden>키를 눌러 연습에 넣거나 뺄 수 있습니다. 고른 키만으로 칠 수 있는 낱말이 나옵니다.</p>
+      </div>
+      <span class="meta-k">집중 키</span>
+      <div class="meta-v focus" id="focus"></div>
+    </section>
+
+    <section class="text" id="text" aria-label="연습 글" aria-live="off"></section>
+    <p class="credit" id="credit" hidden></p>
+    <section class="guide" id="guide" aria-live="polite"></section>
+
+    <section class="kbd-wrap" id="kbd-wrap" aria-label="키보드">
+      <div class="kbd" id="kbd"></div>
+    </section>
+
+    <section class="bottom">
+      <div class="legend">
+        <span class="legend-title">글자 색</span>
+        <span><b class="c-cho">ㄱ</b> 초성 (오른손)</span>
+        <span><b class="c-jung">ㅏ</b> 중성 — 초성 뒤 갈마들이</span>
+        <span><b class="c-jong">ㄴ</b> 종성 (왼손)</span>
+      </div>
+      <div class="hands" id="hands"></div>
+      <div class="legend legend-r">
+        <span class="legend-title">손가락 구역</span>
+        <span>새끼 <i class="sw z5"></i></span>
+        <span>약지 <i class="sw z4"></i></span>
+        <span>중지 <i class="sw z3"></i></span>
+        <span>검지 <i class="sw z2"></i></span>
+      </div>
+    </section>
+    <p class="hint">키보드로 바로 치세요. 판정은 물리 키 자리로 하므로 한/영 상태와 상관없습니다. <kbd>Esc</kbd> 새 글</p>
+  </main>
+
+  <main id="stats" hidden aria-label="키별 통계"></main>
+
+  <section class="panel" id="mine-panel" hidden aria-labelledby="mine-title">
+    <div class="panel-card">
+      <h2 id="mine-title">내 글감</h2>
+      <p class="panel-sub">한 줄에 한 글감씩 붙여 넣으세요. 이 브라우저에만 저장되고 사이트나 다른 사람에게는 보내지지 않습니다. 기본 배열로 칠 수 없는 글자(영문, 따옴표 등)는 빠집니다.</p>
+      <label class="sr" for="mine-input">글감 입력</label>
+      <textarea id="mine-input" rows="12" spellcheck="false" placeholder="예) 오늘 할 일은 오늘 끝내자."></textarea>
+      <p class="panel-report" id="mine-report"></p>
+      <div class="panel-actions">
+        <button type="button" class="btn" id="mine-cancel">닫기</button>
+        <button type="button" class="btn btn-strong" id="mine-save">저장하고 연습</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>배열: <a href="https://pat.im/1136" target="_blank" rel="noopener">신세벌식 P2</a> (팥알) · 낱말: 국립국어원 「한국어 학습용 어휘 목록」(공공누리 제1유형) · 짧은 글: 직접 쓴 문장, 전래 속담, 저작권이 끝난 한국 문학(현진건·김동인·나도향, 원문 <a href="https://ko.wikisource.org" target="_blank" rel="noopener">위키문헌</a>)</span>
+    <span>연습 기록은 이 브라우저에만 저장됩니다.</span>
+  </footer>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <div class="tip" id="tip" hidden></div>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

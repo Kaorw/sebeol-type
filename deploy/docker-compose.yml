@@ -1,0 +1,10 @@
+# 저장소 최상위에서: docker compose -f deploy/docker-compose.yml up -d --build
+services:
+  sinsebeol-typing:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: sinsebeol-typing
+    restart: unless-stopped
+    ports:
+      - "8088:80"   # 역방향 프록시(Caddy/Traefik/nginx) 뒤에 둘 때는 이 줄 대신 프록시 네트워크에 연결
