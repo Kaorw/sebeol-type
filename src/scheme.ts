@@ -141,7 +141,9 @@ export const SCHEMES: Record<SchemeId, Scheme> = { p2, semoe };
 const KEY = 'sebeol-type.scheme';
 function initial(): SchemeId {
   try {
-    const q = new URLSearchParams(location.search).get('scheme');
+    // ?scheme=semoe 또는 #semoe (주소 뒤 # 만 전해지는 곳에서도 쓰도록)
+    const h = location.hash.slice(1);
+    const q = new URLSearchParams(location.search).get('scheme') ?? (h === 'p2' || h === 'semoe' ? h : null);
     if (q === 'p2' || q === 'semoe') { localStorage.setItem(KEY, q); return q; }
     return localStorage.getItem(KEY) === 'semoe' ? 'semoe' : 'p2';
   } catch { return 'p2'; }
@@ -154,5 +156,6 @@ export function switchScheme(id: SchemeId): void {
   try { localStorage.setItem(KEY, id); } catch { /* 무시 */ }
   const url = new URL(location.href);
   url.searchParams.delete('scheme');
+  url.hash = '';
   location.replace(url.toString());
 }
