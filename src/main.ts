@@ -1,6 +1,6 @@
 import './style.css';
 import { keyLabel } from './layout/p2';
-import { PHYS_LAYOUTS, PhysLayout, PhysKey, Finger, FINGER_NAME, FINGER_SHORT, shiftFor } from './layout/physical';
+import { PHYS_LAYOUTS, LAYOUT_ALIAS, PhysLayout, PhysKey, Finger, FINGER_NAME, FINGER_SHORT, shiftFor } from './layout/physical';
 import { STAGES, VOCAB, makeLesson, makeTextLesson, Word } from './app/curriculum';
 import { SCHEME, SCHEMES, SchemeId, switchScheme } from './scheme';
 import { TEXTS, TEXT_SETS, creditOf, TextItem } from './app/texts';
@@ -19,7 +19,12 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const state = load();
 // 물리 배열은 자판과 상관없이 하나로 쓴다
 const LAYOUT_KEY = 'sebeol-type.layout';
-try { const l = localStorage.getItem(LAYOUT_KEY); if (l && PHYS_LAYOUTS.some((x) => x.id === l)) state.layout = l; } catch { /* 무시 */ }
+if (LAYOUT_ALIAS[state.layout]) state.layout = LAYOUT_ALIAS[state.layout];
+try {
+  let l = localStorage.getItem(LAYOUT_KEY);
+  if (l && LAYOUT_ALIAS[l]) { l = LAYOUT_ALIAS[l]; localStorage.setItem(LAYOUT_KEY, l); }
+  if (l && PHYS_LAYOUTS.some((x) => x.id === l)) state.layout = l;
+} catch { /* 무시 */ }
 let mine = loadMine();
 let words: Word[] = [];
 let lesson: Lesson;

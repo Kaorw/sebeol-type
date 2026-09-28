@@ -4,7 +4,7 @@ import { TEXTS } from '../src/app/texts';
 import { chordText, chordMatches, semoeCharStrokes, semoeTypeable } from '../src/engine/semoe';
 import { Lesson } from '../src/app/session';
 import { SCHEMES } from '../src/scheme';
-import { PHYS_LAYOUTS, SPLIT_TB, shiftFor } from '../src/layout/physical';
+import { PHYS_LAYOUTS, ERGO, shiftFor } from '../src/layout/physical';
 
 const keysOf = (ch: string) => semoeCharStrokes(ch)[0].chord!.map((p) => p.code);
 const label = (codes: string[]) => codes.map((c) => c.replace(/^Key/, '').replace('Semicolon', ';').replace('Period', '.')).join('+');
@@ -83,23 +83,28 @@ describe('모아치기 연습 판정', () => {
   });
 });
 
-describe('트랙볼 스플릿 배열', () => {
-  it('목록에 있다', () => { expect(PHYS_LAYOUTS.map((l) => l.id)).toContain('split-tb'); });
+describe('Ergo 배열', () => {
+  it('목록에 있다', () => { expect(PHYS_LAYOUTS.map((l) => l.id)).toContain('ergo'); });
   it('세모이 한글 키를 모두 담고 있다', () => {
-    const have = new Set(SPLIT_TB.keys.map((k) => k.code));
+    const have = new Set(ERGO.keys.map((k) => k.code));
     const keys = sc3().filter((c) => !have.has(c));
     expect(keys).toEqual([]);
   });
   it('손가락 배정: 열 엇갈림 표준', () => {
-    const f = (c: string) => SPLIT_TB.keys.find((k) => k.code === c)!.finger;
+    const f = (c: string) => ERGO.keys.find((k) => k.code === c)!.finger;
     expect([f('KeyQ'), f('KeyW'), f('KeyE'), f('KeyR'), f('KeyT')]).toEqual(['L5', 'L4', 'L3', 'L2', 'L2']);
     expect([f('KeyY'), f('KeyU'), f('KeyI'), f('KeyO'), f('KeyP')]).toEqual(['R2', 'R2', 'R3', 'R4', 'R5']);
     expect([f('Semicolon'), f('Period'), f('Comma')]).toEqual(['R5', 'R4', 'R3']);
-    expect(SPLIT_TB.keys.filter((k) => k.code === 'KeyB').map((k) => k.finger)).toEqual(['L2', 'R2']); // B 키가 양쪽에
+    expect(ERGO.keys.filter((k) => k.code === 'KeyB').map((k) => k.finger)).toEqual(['L2', 'R2']); // B 키가 양쪽에
+  });
+  it('맨 아랫줄(스페이스·엄지 키·트랙볼·노브)이 없다', () => {
+    expect(ERGO.keys.some((k) => k.code === 'Space')).toBe(false);
+    expect(ERGO.stubs!.map((s) => s.label)).toEqual(expect.not.arrayContaining(['트랙볼', '노브', 'Ctrl', 'M1', '←']));
+    expect(Math.max(...ERGO.keys.map((k) => k.y + k.h))).toBeLessThan(3.5);
   });
   it('오른쪽 Shift가 없으면 왼쪽 Shift를 쓴다', () => {
-    expect(shiftFor(SPLIT_TB, 'Slash')).toBe('ShiftLeft');
-    expect(shiftFor(SPLIT_TB, 'KeyQ')).toBe('ShiftLeft');
+    expect(shiftFor(ERGO, 'Slash')).toBe('ShiftLeft');
+    expect(shiftFor(ERGO, 'KeyQ')).toBe('ShiftLeft');
   });
 });
 
