@@ -97,10 +97,10 @@ describe('Ergo 배열', () => {
     expect([f('Semicolon'), f('Period'), f('Comma')]).toEqual(['R5', 'R4', 'R3']);
     expect(ERGO.keys.filter((k) => k.code === 'KeyB').map((k) => k.finger)).toEqual(['L2', 'R2']); // B 키가 양쪽에
   });
-  it('맨 아랫줄(스페이스·엄지 키·트랙볼·노브)이 없다', () => {
-    expect(ERGO.keys.some((k) => k.code === 'Space')).toBe(false);
+  it('맨 아랫줄(엄지 키·트랙볼·노브)은 없고, 작은 스페이스바가 양쪽에 하나씩', () => {
     expect(ERGO.stubs!.map((s) => s.label)).toEqual(expect.not.arrayContaining(['트랙볼', '노브', 'Ctrl', 'M1', '←']));
-    expect(Math.max(...ERGO.keys.map((k) => k.y + k.h))).toBeLessThan(3.5);
+    expect(ERGO.keys.filter((k) => k.code === 'Space').map((k) => [k.finger, k.w])).toEqual([['L1', 2], ['R1', 2]]);
+    expect(ERGO.note).toBeUndefined();
   });
   it('오른쪽 Shift가 없으면 왼쪽 Shift를 쓴다', () => {
     expect(shiftFor(ERGO, 'Slash')).toBe('ShiftLeft');

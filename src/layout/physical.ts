@@ -63,7 +63,7 @@ const ANSI_STUBS: StubKey[] = [
 /**
  * Ergo: 사진으로 본 열 엇갈림(column stagger) 스플릿 키보드의 글자 영역
  * - 왼쪽 6열 × 3줄 + 안쪽 Fn2, 오른쪽 바깥 B키 + 6열 × 3줄
- * - 맨 아랫줄(Ctrl·Opt·엄지 키·노브, ←·M1~M3·트랙볼)은 그리지 않는다
+ * - 맨 아랫줄(Ctrl·Opt·엄지 키·노브, ←·M1~M3·트랙볼)은 그리지 않고, 스플릿 배열처럼 양쪽에 작은 스페이스바를 둔다
  * - 열마다 높이가 다르다: 가운데손가락 열(E, I)이 가장 높고 새끼손가락 열이 가장 낮다
  * - 모델 정보 없이 사진만 보고 옮겼으므로 키 크기는 어림값이다
  * - 오른쪽에 ' / 키와 오른쪽 Shift가 없다(다른 층에 있을 것으로 봄)
@@ -89,6 +89,7 @@ function ergo(): { keys: PhysKey[]; stubs: StubKey[] } {
     }
   }
   stubs.push({ label: 'Fn2', x: 6, y: 2.35, w: 1 });
+  keys.push(key('Space', 3, 3.55, 2, 'L1')); // 작은 스페이스바 (스플릿 배열처럼 양쪽에 하나씩)
 
   // 오른쪽
   const X0 = 8.4;
@@ -108,6 +109,7 @@ function ergo(): { keys: PhysKey[]; stubs: StubKey[] } {
       else if (`${c},${r}` in RSTUB) stubs.push({ label: RSTUB[`${c},${r}`], x: X0 + c, y, w: 1 });
     }
   }
+  keys.push(key('Space', X0 + 2, 3.55, 2, 'R1'));
   return { keys, stubs };
 }
 const ERGO_KEYS = ergo();
@@ -117,7 +119,6 @@ export const ORTHO: PhysLayout = { id: 'ortho', name: '오쏘리니어', keys: g
 export const SPLIT: PhysLayout = { id: 'split', name: '스플릿', keys: grid(2) };
 export const ERGO: PhysLayout = {
   id: 'ergo', name: 'Ergo', keys: ERGO_KEYS.keys, stubs: ERGO_KEYS.stubs,
-  note: '열 엇갈림 스플릿 배열입니다. 맨 아랫줄(스페이스 포함)은 그리지 않습니다.',
 };
 
 export const PHYS_LAYOUTS = [ANSI, ORTHO, SPLIT, ERGO];
