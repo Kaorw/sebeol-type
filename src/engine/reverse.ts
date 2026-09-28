@@ -10,6 +10,8 @@ export interface Stroke {
   role: Role;
   note?: string;  // 예: '갈마들이', '거듭치기', '겹홀소리'
   shift?: boolean; // 윗글쇠와 함께
+  /** 모아치기 자판: 한꺼번에 누를 키 묶음 (있으면 code 대신 이 키들을 모두 누른다) */
+  chord?: { code: string; jamo: string; role: Role }[];
 }
 
 export class UntypeableError extends Error {}

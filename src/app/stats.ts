@@ -1,4 +1,6 @@
 // 키별 숙련도와 저장
+import { SCHEME } from '../scheme';
+
 export interface Sample { ms: number | null; ok: boolean }
 export interface Saved {
   keyStats: Record<string, Sample[]>;
@@ -18,7 +20,8 @@ export interface Saved {
   history: { t: number; cpm: number; acc: number; mode: 'words' | 'text'; n: number }[];
 }
 
-const STORE = 'sinsebeol-p2.v1';
+// 자판마다 기록을 따로 둔다 (같은 키라도 자판에 따라 낱자가 다르다)
+const STORE = SCHEME.store;
 const MAX_SAMPLES = 30;
 export const MIN_SAMPLES = 10;
 export const UNLOCK_SCORE = 0.8;

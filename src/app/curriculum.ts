@@ -1,26 +1,27 @@
 // 줄 단위 해금 커리큘럼과 낱말 출제
 import vocabWords from '../../data/vocab.json';
-import { flatCodes } from '../engine/reverse';
+import { SCHEME, Scheme } from '../scheme';
 
 export interface Stage { id: number; name: string; keys: string[] }
 
-const HOME = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote'];
-const TOP = ['KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP'];
-const BOTTOM = ['KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Slash'];
-
-export const STAGES: Stage[] = [
-  { id: 1, name: '기준 자리', keys: HOME },
-  { id: 2, name: '+ 윗줄', keys: [...HOME, ...TOP] },
-  { id: 3, name: '+ 아랫줄', keys: [...HOME, ...TOP, ...BOTTOM] },
-];
+export const stagesOf = (sc: Scheme): Stage[] => sc.stages.map((s, i) => ({ id: i + 1, ...s }));
+export const STAGES: Stage[] = stagesOf(SCHEME);
 
 export interface Word { word: string; codes: string[] }
 
-export const VOCAB: Word[] = (vocabWords as string[]).map((w) => ({ word: w, codes: flatCodes(w) }));
+/** 자판으로 칠 수 있는 낱말과 그 키 */
+export function vocabOf(sc: Scheme): Word[] {
+  const out: Word[] = [];
+  for (const w of vocabWords as string[]) {
+    try { out.push({ word: w, codes: sc.flatCodes(w) }); } catch { /* 칠 수 없는 낱말은 뺀다 */ }
+  }
+  return out;
+}
+export const VOCAB: Word[] = vocabOf(SCHEME);
 
-export function pool(stage: Stage): Word[] {
+export function pool(stage: Stage, words: Word[] = VOCAB): Word[] {
   const open = new Set(stage.keys);
-  return VOCAB.filter((w) => w.codes.every((c) => open.has(c)));
+  return words.filter((w) => w.codes.every((c) => open.has(c)));
 }
 
 /** 오래 안 나온 순(한 번도 안 나온 것 먼저), 같으면 무작위 */

@@ -1,27 +1,39 @@
 import './style.css';
-import { P2, PUNCT, SHIFT_PUNCT, keyLabel } from './layout/p2';
-import { PHYS_LAYOUTS, PhysLayout, PhysKey, Finger, FINGER_NAME, shiftFor } from './layout/physical';
+import { keyLabel } from './layout/p2';
+import { PHYS_LAYOUTS, PhysLayout, PhysKey, Finger, FINGER_NAME, FINGER_SHORT, shiftFor } from './layout/physical';
 import { STAGES, VOCAB, makeLesson, makeTextLesson, Word } from './app/curriculum';
+import { SCHEME, SCHEMES, SchemeId, switchScheme } from './scheme';
 import { TEXTS, TEXT_SETS, creditOf, TextItem } from './app/texts';
 import { loadMine, saveMine, normalize } from './app/mytexts';
 import { load, save, record, score, weakest, stageReady, today, resetRecords, UNLOCK_SCORE, MIN_SAMPLES } from './app/stats';
 import { Lesson } from './app/session';
-import { typeCodes } from './engine/automaton';
 import type { Stroke } from './engine/reverse';
+
+const PUNCT = SCHEME.punct;
+const SHIFT_PUNCT = SCHEME.shiftPunct;
+const CHORD = SCHEME.chord;
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 
 const state = load();
+// 물리 배열은 자판과 상관없이 하나로 쓴다
+const LAYOUT_KEY = 'sebeol-type.layout';
+try { const l = localStorage.getItem(LAYOUT_KEY); if (l && PHYS_LAYOUTS.some((x) => x.id === l)) state.layout = l; } catch { /* 무시 */ }
 let mine = loadMine();
 let words: Word[] = [];
 let lesson: Lesson;
 let keyEls = new Map<string, HTMLElement[]>();
-let lastWrong: string | null = null;
+let lastWrongSet = new Set<string>();
+/** 모아치기: 지금 누르고 있는 키 / 이번 묶음에 누른 키 / 윗글쇠 */
+const held = new Set<string>();
+const chordKeys = new Set<string>();
+let chordShift = false;
+let lastChord: string[] = [];
 let view: 'practice' | 'stats' = 'practice';
 
-const HANGUL_KEYS = STAGES[2].keys; // 29키
-const ALL_KEYS = [...HANGUL_KEYS, ...Object.keys(PUNCT), 'ShiftLeft', 'ShiftRight'];
+const HANGUL_KEYS = STAGES[STAGES.length - 1].keys; // 한글 키 전부
+const ALL_KEYS = [...HANGUL_KEYS, ...Object.keys(PUNCT), ...Object.keys(SHIFT_PUNCT), 'ShiftLeft', 'ShiftRight'];
 
 
 const stage = () => STAGES[state.stage - 1];
@@ -43,23 +55,15 @@ const fingerOf = (code: string): Finger | undefined => layout().keys.find((k) =>
 const poolFor = (keys: string[]) => { const s = new Set(keys); return VOCAB.filter((w) => w.codes.every((c) => s.has(c))); };
 
 // ── 키 표시용 낱자 ─────────────────────────────
-function keyGlyph(code: string): { main: string; sub: string; side: string } {
-  if (PUNCT[code]) return { main: PUNCT[code], sub: '', side: 'P' };
-  const k = P2[code];
-  if (!k) return { main: '', sub: '', side: '' };
-  if (k.side === 'R') return { main: k.cho, sub: k.rightVowel ? `(${k.rightVowel})` : '', side: 'R' };
-  return { main: k.jong, sub: k.vowel ?? '', side: 'L' };
-}
-function chipGlyph(code: string): string {
-  const k = P2[code];
-  if (!k) return '';
-  return k.side === 'R' ? k.cho : (k.vowel ?? k.jong);
-}
+const keyGlyph = (code: string) => SCHEME.glyph(code);
+const chipGlyph = (code: string) => SCHEME.chip(code);
 function capLabel(k: PhysKey): string {
   if (k.label) return k.label;
   if (k.code === 'Space') return '';
   return keyLabel(k.code) + (SHIFT_PUNCT[k.code] ? ` ${SHIFT_PUNCT[k.code]}` : '');
 }
+/** 이 글자(타)에서 누를 키 */
+const strokeKeys = (s: Stroke): string[] => (s.chord ? s.chord.map((p) => p.code) : [s.code]);
 
 // ── 연습 시작 ─────────────────────────────────
 function newLesson(): void {
@@ -77,7 +81,9 @@ function newLesson(): void {
   }
   save(state);
   lesson = new Lesson(items.join(' '));
-  lastWrong = null;
+  lastWrongSet = new Set();
+  lastChord = [];
+  held.clear(); chordKeys.clear(); chordShift = false;
   renderAll();
 }
 
@@ -97,6 +103,7 @@ function renderControls(): void {
     return `<button type="button" data-stage="${s.id}" aria-pressed="${s.id === state.stage}" title="${locked ? '아직 열리지 않은 단계 (눌러서 미리 연습할 수 있음)' : ''}">${locked ? LOCK_SVG : ''}${s.id}. ${esc(s.name)}</button>`;
   }).join('');
   $('layout-seg').innerHTML = seg(PHYS_LAYOUTS.map((l) => [l.id, l.name] as [string, string]), 'layout', state.layout);
+  $('scheme-seg').innerHTML = seg((Object.keys(SCHEMES) as SchemeId[]).map((id) => [id, SCHEMES[id].name] as [string, string]), 'scheme', SCHEME.id);
   ($('target') as HTMLSelectElement).value = String(state.targetCpm);
   $('view-toggle').setAttribute('aria-pressed', String(view === 'stats'));
   $('view-toggle').textContent = view === 'stats' ? '연습으로' : '통계';
@@ -139,8 +146,7 @@ function renderMeta(): void {
 
   if (focus) {
     const sc = score(state, focus);
-    const k = P2[focus];
-    const role = k?.side === 'R' ? `초성 ${k.cho}` : `중성 ${(k as any)?.vowel ?? ''} / 받침 ${(k as any)?.jong ?? ''}`;
+    const role = SCHEME.role(focus);
     const status = sc.calibrated ? `숙련도 ${Math.round(sc.score * 100)}%` : `표본 모으는 중 ${sc.samples}/${MIN_SAMPLES}`;
     let goal: string;
     if (isText()) goal = '짧은 글에서는 모든 키를 씁니다';
@@ -169,15 +175,16 @@ function renderText(): void {
     const sp = c.ch === ' ';
     const cls = [sp ? 'sp' : '', i < lesson.ci ? 'done' : '', i === lesson.ci ? 'cur' : '', c.error ? 'err' : ''].join(' ').trim();
     let shown = sp ? '·' : c.ch;
-    if (i === lesson.ci && lesson.si > 0) shown = typeCodes(c.strokes.slice(0, lesson.si).map((s) => s.code)) || shown;
+    if (i === lesson.ci && !CHORD && lesson.si > 0) shown = SCHEME.preview(c.strokes.slice(0, lesson.si).map((s) => s.code)) || shown;
+    if (i === lesson.ci && CHORD && chordKeys.size) shown = SCHEME.preview([...chordKeys]) || shown;
     return `<span class="${cls}">${esc(shown)}</span>`;
   }).join('');
 }
 
 // ── 지금 칠 글자 ───────────────────────────────
+const fingerName = (code: string) => { const f = fingerOf(code); return f ? FINGER_NAME[f] : '이 배열에 없는 키'; };
 function strokeNote(s: Stroke): string {
-  const f = fingerOf(s.code);
-  const hand = f ? FINGER_NAME[f] : '';
+  const hand = fingerName(s.code);
   switch (s.note) {
     case '갈마들이': return `초성 뒤 갈마들이 → 중성 · ${hand}`;
     case '오른쪽 홀소리': return `오른쪽 홀소리 (겹홀소리 시작) · ${hand}`;
@@ -191,12 +198,26 @@ function strokeNote(s: Stroke): string {
   }
   return `${s.role} · ${hand}`;
 }
-function roleColor(s: Stroke): string {
+function roleColor(s: { role: string }): string {
   return s.role === '초성' ? 'var(--cho)' : s.role === '중성' ? 'var(--jung)' : s.role === '종성' ? 'var(--jong)' : 'var(--text)';
 }
 function renderGuide(): void {
   const c = lesson.current;
   if (!c) { $('guide').innerHTML = ''; return; }
+  const exp = lesson.expected;
+  if (CHORD && exp?.chord) {
+    // 모아치기: 한 글자의 키를 한꺼번에
+    const parts = exp.chord.map((p) => {
+      const held = chordKeys.has(p.code) ? 'now' : '';
+      return `<div class="step ${held}"><span class="sj" style="color:${roleColor(p)}">${esc(p.jamo)}</span><span class="sk">${esc(keyLabel(p.code))}</span><span class="sn">${esc(`${p.role} · ${fingerName(p.code)}`)}</span></div>`;
+    });
+    const next = lesson.chars[lesson.ci + 1];
+    const tip = next?.ch === ' ' ? ' · 스페이스를 함께 누르면 띄어쓰기까지' : '';
+    const miss = lastChord.length
+      ? `<span class="miss">방금 ${esc(lastChord.map(keyLabel).join('+'))} → ${esc(SCHEME.preview(lastChord) || '?')}</span>` : '';
+    $('guide').innerHTML = `<span class="lbl">지금 칠 글자</span><span class="big">${esc(c.ch)}</span><span class="eq">=</span>${parts.join('<span class="arr">+</span>')}<span class="lbl together">한꺼번에 눌렀다 떼기${tip}</span>${miss}`;
+    return;
+  }
   const parts = c.strokes.map((s, i) => {
     const cls = i < lesson.si ? 'past' : i === lesson.si ? 'now' : '';
     const j = s.role === '띄어쓰기' ? '␣' : s.jamo;
@@ -207,44 +228,38 @@ function renderGuide(): void {
 }
 
 // ── 키보드 ─────────────────────────────────────
-const ANSI_STUBS = [
-  { label: 'Backspace', x: 13, y: 0, w: 2 },
-  { label: 'Tab', x: 0, y: 1, w: 1.5 }, { label: '\\', x: 13.5, y: 1, w: 1.5 },
-  { label: 'Caps', x: 0, y: 2, w: 1.75 }, { label: 'Enter', x: 12.75, y: 2, w: 2.25 },
-  { label: 'Ctrl', x: 0, y: 4, w: 1.5 }, { label: 'Alt', x: 1.5, y: 4, w: 1.5 },
-  { label: 'Alt', x: 10, y: 4, w: 1.5 }, { label: 'Ctrl', x: 13.5, y: 4, w: 1.5 },
-];
 interface KbdOpts { target: HTMLElement; wrap: HTMLElement; heat?: boolean }
 function drawKeyboard({ target, wrap, heat }: KbdOpts): Map<string, HTMLElement[]> {
   const L = layout();
-  const stubs = L.id === 'ansi' ? ANSI_STUBS : [];
+  const stubs = L.stubs ?? [];
   const maxX = Math.max(...L.keys.map((k) => k.x + k.w), ...stubs.map((s) => s.x + s.w));
-  const maxY = Math.max(...L.keys.map((k) => k.y + k.h));
+  const maxY = Math.max(...L.keys.map((k) => k.y + k.h), ...stubs.map((s) => s.y + (s.h ?? 1)));
   const pad = 14;
   const u = Math.max(16, Math.min(56, Math.floor((wrap.clientWidth - pad * 2) / maxX)));
   const gap = Math.max(3, Math.round(u * 0.1));
   target.style.setProperty('--u', `${u}px`);
   target.style.width = `${maxX * u + pad * 2 - gap}px`;
   target.style.height = `${maxY * u + pad * 2 - gap}px`;
-  const box = (x: number, y: number, w: number) => `left:${pad + x * u}px;top:${pad + y * u}px;width:${w * u - gap}px;height:${u - gap}px`;
+  const box = (x: number, y: number, w: number, h = 1, rot?: number) =>
+    `left:${pad + x * u}px;top:${pad + y * u}px;width:${w * u - gap}px;height:${h * u - gap}px${rot ? `;transform:rotate(${rot}deg)` : ''}`;
   const open = openKeys();
-  let html = stubs.map((s) => `<div class="key stub" style="${box(s.x, s.y, s.w)}"><span class="cap">${esc(s.label)}</span></div>`).join('');
+  let html = stubs.map((s) => `<div class="key stub${s.round ? ' round' : ''}" style="${box(s.x, s.y, s.w, s.h, s.rot)}"><span class="cap">${esc(s.label)}</span></div>`).join('');
   for (const k of L.keys) {
     const g = keyGlyph(k.code);
     const isMod = k.code.startsWith('Shift');
     const zone = k.code === 'Space' ? 'z1' : `z${k.finger.slice(1)}`;
     if (heat) {
-      if (!P2[k.code]) { html += `<div class="key stub" style="${box(k.x, k.y, k.w)}"><span class="cap">${esc(capLabel(k))}</span></div>`; continue; }
+      if (!SCHEME.isHangulKey(k.code)) { html += `<div class="key stub" style="${box(k.x, k.y, k.w, k.h, k.rot)}"><span class="cap">${esc(capLabel(k))}</span></div>`; continue; }
       const sc = score(state, k.code);
       const bg = sc.calibrated ? heatColor(sc.score) : 'var(--z1)';
       const ink = sc.calibrated && sc.score > 0.55 ? 'var(--accent-ink)' : 'var(--text)';
       const label = sc.calibrated ? `${Math.round(sc.score * 100)}` : '–';
-      html += `<div class="key heat" data-tipkey="${k.code}" style="${box(k.x, k.y, k.w)};background:${bg};color:${ink}"><span class="cap" style="color:inherit;opacity:.75">${esc(keyLabel(k.code))}</span><span class="sub" style="color:inherit">${chipGlyph(k.code)}</span><span class="main" style="color:inherit;font-family:var(--mono)">${label}</span></div>`;
+      html += `<div class="key heat" data-tipkey="${k.code}" style="${box(k.x, k.y, k.w, k.h, k.rot)};background:${bg};color:${ink}"><span class="cap" style="color:inherit;opacity:.75">${esc(keyLabel(k.code))}</span><span class="sub" style="color:inherit">${chipGlyph(k.code)}</span><span class="main" style="color:inherit;font-family:var(--mono)">${label}</span></div>`;
       continue;
     }
-    const locked = k.code !== 'Space' && !open.has(k.code);
+    const locked = k.code !== 'Space' && !isMod && !open.has(k.code);
     const cls = ['key', isMod ? 'stub mod' : zone, g.side, locked ? 'locked' : '', k.home ? 'home' : ''].join(' ');
-    html += `<div class="${cls}" data-code="${k.code}" style="${box(k.x, k.y, k.w)}"><span class="cap">${esc(capLabel(k))}</span><span class="sub">${esc(g.sub)}</span><span class="main">${esc(g.main)}</span></div>`;
+    html += `<div class="${cls}" data-code="${k.code}" style="${box(k.x, k.y, k.w, k.h, k.rot)}"><span class="cap">${esc(capLabel(k))}</span><span class="sub">${esc(g.sub)}</span><span class="main">${esc(g.main)}</span><span class="fg">${esc(FINGER_SHORT[k.finger])}</span></div>`;
   }
   target.innerHTML = html;
   const map = new Map<string, HTMLElement[]>();
@@ -256,25 +271,38 @@ function drawKeyboard({ target, wrap, heat }: KbdOpts): Map<string, HTMLElement[
 }
 function buildKeyboard(): void {
   keyEls = drawKeyboard({ target: $('kbd'), wrap: $('kbd-wrap') });
+  // 이 배열에 없는 한글 키 알림
+  const have = new Set(layout().keys.map((k) => k.code));
+  const missing = HANGUL_KEYS.filter((c) => !have.has(c));
+  const note = [layout().note ?? '', missing.length ? `이 배열에는 ${SCHEME.name} 키 ${missing.map(keyLabel).join(' ')} 자리가 없습니다(다른 층).` : ''].filter(Boolean).join(' ');
+  $('kbd-note').textContent = note;
+  $('kbd-note').hidden = !note;
 }
-function renderKeyHighlight(): void {
+/** 지금 눌러야 할 키 (Shift 포함) */
+function wantedKeys(): Set<string> {
   const exp = lesson.expected;
   const want = new Set<string>();
-  if (exp) { want.add(exp.code); if (exp.shift) want.add(shiftFor(layout(), exp.code)); }
+  if (!exp) return want;
+  strokeKeys(exp).forEach((c) => want.add(c));
+  if (exp.shift) want.add(shiftFor(layout(), exp.code));
+  return want;
+}
+function renderKeyHighlight(): void {
+  const want = wantedKeys();
   keyEls.forEach((els, code) => els.forEach((el) => {
     el.classList.toggle('next', want.has(code));
-    el.classList.toggle('wrong', code === lastWrong);
+    el.classList.toggle('held', held.has(code) || chordKeys.has(code));
+    el.classList.toggle('wrong', lastWrongSet.has(code));
   }));
 }
 
 // ── 손 ─────────────────────────────────────────
 const FINGER_H: Record<string, number> = { '5': 68, '4': 94, '3': 108, '2': 98, '1': 56 };
 function renderHands(): void {
-  const exp = lesson.expected;
   const on = new Set<string>();
-  if (exp) {
-    on.add(exp.code === 'Space' ? 'R1' : fingerOf(exp.code) ?? '');
-    if (exp.shift) on.add(shiftFor(layout(), exp.code) === 'ShiftLeft' ? 'L5' : 'R5');
+  for (const code of wantedKeys()) {
+    const f = fingerOf(code) ?? (code === 'Space' ? 'R1' : undefined);
+    if (f) on.add(f);
   }
   const hand = (side: 'L' | 'R') => {
     const ids = side === 'L' ? ['5', '4', '3', '2', '1'] : ['1', '2', '3', '4', '5'];
@@ -347,8 +375,7 @@ function renderStats(): void {
       <div class="table-wrap"><table class="ktable">
         <thead><tr><th>키</th><th>낱자</th><th>손가락</th><th class="num">표본</th><th class="num">정확도</th><th class="num">속도</th><th>숙련도</th></tr></thead>
         <tbody>${rows.map(({ code, sc, f }) => {
-          const k = P2[code] as any;
-          const jamo = k.side === 'R' ? `초성 ${k.cho}${k.rightVowel ? ` · (${k.rightVowel})` : ''}` : `받침 ${k.jong}${k.vowel ? ` · 중성 ${k.vowel}` : ''}`;
+          const jamo = SCHEME.role(code);
           const pct = Math.round(sc.score * 100);
           return `<tr><td class="mono">${esc(keyLabel(code))}</td><td>${esc(jamo)}</td><td>${f ? FINGER_NAME[f] : ''}</td><td class="num">${sc.samples}</td><td class="num">${sc.samples ? Math.round(sc.acc * 100) + '%' : '–'}</td><td class="num">${sc.cpm ? Math.round(sc.cpm) : '–'}</td><td><span class="tbar"><i style="width:${sc.calibrated ? pct : 0}%;background:${scoreColor(code)}"></i></span> <span class="num">${sc.calibrated ? pct + '%' : '표본 부족'}</span></td></tr>`;
         }).join('')}</tbody>
@@ -422,24 +449,58 @@ function finishLesson(): void {
   newLesson();
 }
 
-window.addEventListener('keydown', (e) => {
-  if (view !== 'practice' || !$('mine-panel').hidden) return;
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
-  const tag = (e.target as HTMLElement)?.tagName;
-  if (tag === 'SELECT' || tag === 'TEXTAREA') return;
-  if (e.code === 'Escape') { newLesson(); return; }
-  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') return;
-  if (e.code !== 'Space' && !P2[e.code] && !PUNCT[e.code] && !SHIFT_PUNCT[e.code]) return;
-  e.preventDefault();
-  if (e.repeat) return;
-  const r = lesson.press(e.code, performance.now(), e.shiftKey);
+function afterPress(r: ReturnType<Lesson['press']>, pressed: string[]): void {
   if (!r) return;
-  record(state, r.expected, { ok: r.ok, ms: r.ok ? r.ms : null });
-  lastWrong = r.ok ? null : e.code;
+  // 키별 기록: 모아치기는 글자에 든 키마다, 걸린 시간은 키 수로 나눠 한 타 값으로
+  const per = r.ok && r.ms !== null ? r.ms / Math.max(1, r.units) : null;
+  for (const k of r.keys) record(state, k, { ok: r.ok, ms: per });
+  lastWrongSet = new Set(r.ok ? [] : pressed.filter((c) => !r.keys.includes(c)).concat(r.keys.filter((c) => !pressed.includes(c))));
+  lastChord = !r.ok && CHORD ? pressed : [];
   if (lesson.done) { finishLesson(); return; }
   renderLive();
   if (lesson.hits % 8 === 0) { renderMeta(); save(state); }
+}
+
+const isPracticeKey = (code: string) => code === 'Space' || SCHEME.isHangulKey(code) || !!PUNCT[code] || !!SHIFT_PUNCT[code];
+const inPractice = (e: KeyboardEvent) => {
+  if (view !== 'practice' || !$('mine-panel').hidden) return false;
+  if (e.ctrlKey || e.metaKey || e.altKey) return false;
+  const tag = (e.target as HTMLElement)?.tagName;
+  return !(tag === 'SELECT' || tag === 'TEXTAREA');
+};
+
+window.addEventListener('keydown', (e) => {
+  if (!inPractice(e)) return;
+  if (e.code === 'Escape') { newLesson(); return; }
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (CHORD && held.size) chordShift = true; return; }
+  if (!isPracticeKey(e.code)) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  if (CHORD) {
+    // 모아치기: 누르는 동안 모으고, 모두 떼면 판정
+    held.add(e.code);
+    chordKeys.add(e.code);
+    if (e.shiftKey) chordShift = true;
+    lastWrongSet = new Set();
+    renderText(); renderGuide(); renderKeyHighlight();
+    return;
+  }
+  const r = lesson.press(e.code, performance.now(), e.shiftKey);
+  afterPress(r, [e.code]);
 });
+
+window.addEventListener('keyup', (e) => {
+  if (!CHORD || !chordKeys.size) return;
+  if (!held.delete(e.code) || held.size) { renderKeyHighlight(); return; }
+  const pressed = [...chordKeys];
+  const shift = chordShift;
+  chordKeys.clear();
+  chordShift = false;
+  const r = lesson.pressChord(pressed, performance.now(), shift);
+  afterPress(r, pressed);
+});
+// 창을 벗어나면 누르던 키를 버린다
+window.addEventListener('blur', () => { held.clear(); chordKeys.clear(); chordShift = false; if (lesson) renderLive(); });
 
 // ── 클릭 ───────────────────────────────────────
 function openMine(): void {
@@ -463,7 +524,8 @@ document.addEventListener('click', (e) => {
     if (d.source === 'mine' && !mine.length) openMine();
     else { state.textSource = d.source; save(state); newLesson(); }
   }
-  if (d.layout) { state.layout = d.layout; save(state); renderAll(); }
+  if (d.layout) { state.layout = d.layout; save(state); try { localStorage.setItem(LAYOUT_KEY, d.layout); } catch { /* 무시 */ } renderAll(); }
+  if (d.scheme && d.scheme !== SCHEME.id) { save(state); switchScheme(d.scheme as SchemeId); return; }
   if (d.pick) {
     const cur = new Set(customKeys());
     if (cur.has(d.pick)) {
@@ -511,5 +573,14 @@ window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer
 
 // 실제 키보드가 없어 보이는 기기 안내
 try { $('touch-notice').hidden = !(matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches); } catch { /* 무시 */ }
+
+// 자판에 따라 바뀌는 글
+document.title = SCHEME.id === 'p2' ? '신세벌 타자' : '세모이 타자 · 신세벌 타자';
+$('brand-sub').textContent = SCHEME.brandSub;
+$('glyph-legend').innerHTML = `<span class="legend-title">글자 색</span>${SCHEME.legend.map(([c, j, t]) => `<span><b class="${c}">${esc(j)}</b> ${esc(t)}</span>`).join('')}`;
+$('scheme-credit').innerHTML = SCHEME.credit;
+$('play-hint').innerHTML = CHORD
+  ? '한 글자의 키를 <b>한꺼번에 눌렀다가 모두 떼면</b> 판정합니다. 판정은 물리 키 자리로 하므로 한/영 상태와 상관없습니다. <kbd>Esc</kbd> 새 글'
+  : '키보드로 바로 치세요. 판정은 물리 키 자리로 하므로 한/영 상태와 상관없습니다. <kbd>Esc</kbd> 새 글';
 
 newLesson();

@@ -1,5 +1,6 @@
 // 내 글감: 사용자가 붙여 넣은 글을 이 브라우저에만 저장한다 (사이트에는 포함되지 않음)
-import { typeable } from '../engine/reverse';
+import { SCHEME } from '../scheme';
+const typeable = (ch: string) => SCHEME.typeable(ch);
 
 const STORE = 'sinsebeol-p2.mytexts';
 

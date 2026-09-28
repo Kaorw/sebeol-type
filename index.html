@@ -15,7 +15,7 @@
   <header class="top">
     <div class="brand">
       <span class="brand-name">신세벌 타자</span>
-      <span class="brand-sub">신세벌식 P2 · 기본 배열</span>
+      <span class="brand-sub" id="brand-sub">신세벌식 P2 · 기본 배열</span>
     </div>
     <div class="controls">
       <div class="ctl" id="practice-ctls">
@@ -36,6 +36,10 @@
           <div class="seg" id="source-seg" role="group" aria-labelledby="source-label"></div>
           <button type="button" class="btn" id="edit-mine">내 글감 편집</button>
         </div>
+      </div>
+      <div class="ctl">
+        <span class="ctl-label" id="scheme-label">자판</span>
+        <div class="seg" id="scheme-seg" role="group" aria-labelledby="scheme-label"></div>
       </div>
       <div class="ctl">
         <span class="ctl-label" id="layout-label">배열</span>
@@ -76,14 +80,10 @@
     <section class="kbd-wrap" id="kbd-wrap" aria-label="키보드">
       <div class="kbd" id="kbd"></div>
     </section>
+    <p class="kbd-note" id="kbd-note" hidden></p>
 
     <section class="bottom">
-      <div class="legend">
-        <span class="legend-title">글자 색</span>
-        <span><b class="c-cho">ㄱ</b> 초성 (오른손)</span>
-        <span><b class="c-jung">ㅏ</b> 중성 — 초성 뒤 갈마들이</span>
-        <span><b class="c-jong">ㄴ</b> 종성 (왼손)</span>
-      </div>
+      <div class="legend" id="glyph-legend"></div>
       <div class="hands" id="hands"></div>
       <div class="legend legend-r">
         <span class="legend-title">손가락 구역</span>
@@ -91,9 +91,11 @@
         <span>약지 <i class="sw z4"></i></span>
         <span>중지 <i class="sw z3"></i></span>
         <span>검지 <i class="sw z2"></i></span>
+        <span>엄지 <i class="sw z1"></i></span>
+        <span class="legend-note">노란 키 위 이름 = 칠 손가락</span>
       </div>
     </section>
-    <p class="hint">키보드로 바로 치세요. 판정은 물리 키 자리로 하므로 한/영 상태와 상관없습니다. <kbd>Esc</kbd> 새 글</p>
+    <p class="hint" id="play-hint"></p>
   </main>
 
   <main id="stats" hidden aria-label="키별 통계"></main>
@@ -113,7 +115,7 @@
   </section>
 
   <footer class="foot">
-    <span>배열: <a href="https://pat.im/1136" target="_blank" rel="noopener">신세벌식 P2</a> (팥알) · 낱말: 국립국어원 「한국어 학습용 어휘 목록」(공공누리 제1유형) · 짧은 글: 직접 쓴 문장, 전래 속담, 저작권이 끝난 한국 문학(현진건·김동인·나도향, 원문 <a href="https://ko.wikisource.org" target="_blank" rel="noopener">위키문헌</a>)</span>
+    <span><span id="scheme-credit"></span> · 낱말: 국립국어원 「한국어 학습용 어휘 목록」(공공누리 제1유형) · 짧은 글: 직접 쓴 문장, 전래 속담, 저작권이 끝난 한국 문학(현진건·김동인·나도향, 원문 <a href="https://ko.wikisource.org" target="_blank" rel="noopener">위키문헌</a>)</span>
     <span>연습 기록은 이 브라우저에만 저장됩니다.</span>
   </footer>
   <div class="toast" id="toast" role="status" hidden></div>
