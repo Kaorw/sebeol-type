@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import vocab from '../data/vocab.json';
+import basicVocab from '../data/vocab.json';
+import freqVocab from '../data/vocab-freq.json';
+const vocab = [...(basicVocab as string[]), ...(freqVocab as string[])];
 import { TEXTS } from '../src/app/texts';
 import { chordText, chordMatches, semoeCharStrokes, semoeTypeable } from '../src/engine/semoe';
 import { Lesson } from '../src/app/session';

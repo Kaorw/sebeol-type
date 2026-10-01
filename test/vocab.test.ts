@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { flatCodes } from '../src/engine/reverse';
 import { typeCodes } from '../src/engine/automaton';
 
-const vocab: string[] = JSON.parse(readFileSync('data/vocab.json', 'utf8'));
+const vocab: string[] = [
+  ...JSON.parse(readFileSync('data/vocab.json', 'utf8')),
+  ...JSON.parse(readFileSync('data/vocab-freq.json', 'utf8')),
+];
 
 describe('어휘 전체 왕복', () => {
   it(`${vocab.length}개 낱말: 글자 → 키 → 글자`, () => {

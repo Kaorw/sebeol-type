@@ -15,6 +15,10 @@
 - `src/engine/reverse.ts` — 역방향: 글자 → 키 순서 (하이라이트용)
 - `data/vocab-raw.txt` → `data/vocab.json` — 정제된 어휘
 - `scripts/vocab-stats.ts` — 해금 단계별 낱말 수 집계 → `data/vocab-stats.txt`
+- `data/freq/*.txt` → `scripts/build-freq.ts`(`npm run vocab:freq`) → `data/vocab-freq.json` — 「현대 국어 사용 빈도 조사」 일반어·고유명사·조사·어미
+  - 항목 열만 쓰고 동음이의어 번호(감자05)는 뗀다. 한글 음절만으로 된 항목만 남긴다(기호·숫자·낱자 섞인 298개 버림)
+  - 같은 낱말은 빈도를 더해 하나로, 빈도 내림차순. 학습용 어휘와 겹치는 5,539개는 뺌 → 64,060개
+  - 출제: 학습용 어휘 다음에 빈도 차례로 이어 붙인 순위(rank 0~1)를 두고, 안 나온 낱말끼리는 `무작위 + 순위×3`으로 골라 자주 쓰는 낱말이 먼저 나온다
 
 ## 명령
 ```

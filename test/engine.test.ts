@@ -83,7 +83,7 @@ describe('짧은 글 글감', () => {
 });
 describe('낱말 다양화', () => {
   it('한 차례 안에 중복 없음, 여러 차례에 걸쳐 1단계 낱말을 고르게 돈다', () => {
-    const words = pool(STAGES[0]);
+    const words = pool(STAGES[0]).filter((w) => w.rank < 0.08); // 학습용 어휘(기본) 부분만
     const seen: Record<string, number> = {};
     const counts = new Map<string, number>();
     for (let lesson = 0; lesson < 20; lesson++) {
@@ -93,6 +93,18 @@ describe('낱말 다양화', () => {
     }
     // 20차례 × 14 = 280번 → 91개 낱말이 모두 한 번 이상 나와야 함
     expect(counts.size).toBe(words.length);
+  });
+  it('빈도 어휘가 섞여도 자주 쓰는 낱말이 먼저 나온다', () => {
+    const words = pool(STAGES[0]);
+    const seen: Record<string, number> = {};
+    const ranks: number[] = [];
+    for (let lesson = 0; lesson < 5; lesson++) {
+      const ws = makeLesson(words, null, seen);
+      ws.forEach((w) => { seen[w] = lesson; ranks.push(words.find((x) => x.word === w)!.rank); });
+    }
+    expect(new Set(Object.keys(seen)).size).toBe(70); // 5차례 동안 겹치지 않음
+    const median = [...ranks].sort((a, b) => a - b)[35];
+    expect(median).toBeLessThan(0.3);
   });
 });
 
