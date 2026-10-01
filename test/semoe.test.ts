@@ -109,3 +109,21 @@ describe('Ergo 배열', () => {
 });
 
 function sc3(): string[] { return SCHEMES.semoe.stages[2].keys; }
+
+describe('해금 단계', () => {
+  it('단계마다 열린 키가 모두 그 단계 낱말에 나온다 (안 나오면 숙련도를 못 쌓아 다음 단계가 안 열림)', async () => {
+    const { vocabOf, stagesOf, pool } = await import('../src/app/curriculum');
+    const bad: string[] = [];
+    for (const sc of Object.values(SCHEMES)) {
+      const v = vocabOf(sc);
+      for (const st of stagesOf(sc)) {
+        const ws = pool(st, v);
+        for (const k of st.keys) {
+          const n = ws.filter((w) => w.codes.includes(k)).length;
+          if (n < 3) bad.push(`${sc.id} ${st.name} ${k}: ${n}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});

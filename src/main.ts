@@ -57,6 +57,8 @@ const textList = () => textItems().map((t) => t.text);
 let lessonItems: TextItem[] = [];
 const layout = (): PhysLayout => PHYS_LAYOUTS.find((l) => l.id === state.layout) ?? PHYS_LAYOUTS[0];
 const fingerOf = (code: string): Finger | undefined => layout().keys.find((k) => k.code === code)?.finger;
+/** 열린 키 가운데 낱말에 실제로 나오는 키 (낱말이 없는 키는 숙련도를 쌓을 수 없어 해금 판정·집중 키에서 뺀다) */
+const usedKeys = (keys: string[]) => { const ws = poolFor(keys); return keys.filter((k) => ws.some((w) => w.codes.includes(k))); };
 const poolFor = (keys: string[]) => { const s = new Set(keys); return VOCAB.filter((w) => w.codes.every((c) => s.has(c))); };
 
 // ── 키 표시용 낱자 ─────────────────────────────
@@ -81,7 +83,7 @@ function newLesson(): void {
     const all = textItems();
     lessonItems = items.map((t) => all.find((x) => x.text === t)!).filter(Boolean);
   } else {
-    items = makeLesson(words, weakest(state, practiceKeys()), state.seen);
+    items = makeLesson(words, weakest(state, usedKeys(practiceKeys())), state.seen);
     items.forEach((w) => { state.seen[w] = state.lessonNo; });
   }
   save(state);
@@ -135,7 +137,7 @@ function renderMeta(): void {
 
   const open = openKeys();
   const picking = !isText() && !state.unlockOn;
-  const focus = weakest(state, practiceKeys());
+  const focus = weakest(state, usedKeys(practiceKeys()));
   $('chips-hint').hidden = !picking;
   $('chips').innerHTML = HANGUL_KEYS.map((code) => {
     const isOpen = open.has(code);
@@ -159,7 +161,7 @@ function renderMeta(): void {
     else if (state.stage >= 3) goal = '모든 키가 열렸습니다';
     else {
       const next = STAGES[state.stage].name.replace('+ ', '');
-      goal = stageReady(state, stage().keys)
+      goal = stageReady(state, usedKeys(stage().keys))
         ? `모든 키가 목표에 닿았습니다. 이번 차례를 마치면 ${next}이 열립니다`
         : `열린 키가 모두 ${UNLOCK_SCORE * 100}%에 닿으면 ${next}이 열립니다`;
     }
@@ -445,7 +447,7 @@ function finishLesson(): void {
   if (state.history.length > 200) state.history.splice(0, state.history.length - 200);
   if (state.daily.date !== today()) state.daily = { date: today(), ms: 0 };
   state.daily.ms += lesson.elapsedMs;
-  if (!isText() && state.unlockOn && state.stage === state.unlocked && state.unlocked < 3 && stageReady(state, stage().keys)) {
+  if (!isText() && state.unlockOn && state.stage === state.unlocked && state.unlocked < 3 && stageReady(state, usedKeys(stage().keys))) {
     state.unlocked++;
     state.stage = state.unlocked;
     toast(`${STAGES[state.stage - 1].name.replace('+ ', '')} 자모가 열렸습니다`);

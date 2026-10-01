@@ -84,8 +84,9 @@ const p2: Scheme = {
 };
 
 // ── 세모이 ─────────────────────────────────────
-const S_HOME = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon'];
-const S_TOP = ['KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO'];
+// ; (받침 ㅆ)은 홈 행에 있지만 홈 행 키만으로 칠 수 있는 낱말이 없어(있다·했다 모두 윗줄 ㄷ이 필요) 윗줄 단계에서 연다
+const S_HOME = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL'];
+const S_TOP = ['Semicolon', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO'];
 const S_BOTTOM = ['KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Period'];
 
 const semoe: Scheme = {
