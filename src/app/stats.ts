@@ -84,3 +84,14 @@ export function weakest(s: Saved, keys: string[]): string | null {
 export function stageReady(s: Saved, keys: string[]): boolean {
   return keys.every((k) => { const sc = score(s, k); return sc.calibrated && sc.score >= UNLOCK_SCORE; });
 }
+
+/**
+ * 키를 더 연습해야 하는 정도 (0.05~1.5)
+ * - 표본이 모자란 키: 1 (아직 모름 → 자주 내서 표본을 모은다)
+ * - 그 밖: 숙련도가 낮을수록, 틀린 비율이 높을수록 크다
+ */
+export function needOf(s: Saved, code: string): number {
+  const sc = score(s, code);
+  if (!sc.calibrated) return 1;
+  return Math.min(1.5, Math.max(0.05, 0.05 + 0.6 * (1 - sc.score) + 1.0 * (1 - sc.acc)));
+}

@@ -38,32 +38,31 @@ function byStaleness<T>(items: T[], lastSeen: (t: T) => number, rand: () => numb
 }
 
 /**
- * 낱말 묶음 출제 (다양화)
- * - 한 차례 안에서는 같은 낱말을 다시 내지 않는다
- * - 가장 오래 안 나온 낱말부터 낸다 (seen: 낱말 → 마지막으로 나온 차례 번호)
- * - 3분의 1까지는 집중 키가 든 낱말로 채운다 (직전 2차례에 나온 낱말 제외)
+ * 낱말 묶음 출제 (키 진도 가중 무작위)
+ * - need(키): 0~1.5. 진도가 낮거나 자주 틀리는 키일수록 크다
+ * - 낱말 무게 = (0.1 + 가장 약한 키의 need + 0.5×평균 need) × 자주 쓰는 낱말 가중(순위가 낮을수록 큼)
+ * - 무게에 비례해 겹치지 않게 뽑는다 (Efraimidis–Spirakis: 열쇠 = 난수^(1/무게)가 큰 차례)
+ * - 직전 2차례에 나온 낱말은 빼서 같은 낱말이 연달아 나오지 않게
  */
 export function makeLesson(
-  words: Word[], focus: string | null, seen: Record<string, number>,
+  words: Word[], need: (code: string) => number, seen: Record<string, number>,
   count = 14, rand: () => number = Math.random,
 ): string[] {
-  const n = Math.min(count, words.length);
-  const last = (w: Word) => seen[w.word] ?? -1;
-  // 집중 키 낱말은 1/3까지, 직전 2차례에 나온 낱말은 빼서 같은 낱말이 연달아 나오지 않게
-  const recent = Object.values(seen).reduce((a, b) => Math.max(a, b), -1) - 2;
-  // 자주 쓰는 낱말이 먼저: 무작위 값(0~1)에 순위(0~1)×3을 더해 드문 낱말을 뒤로 민다
-  const freqFirst = (w: Word) => w.rank * 3;
-  const focusWords = focus
-    ? byStaleness(words.filter((w) => w.codes.includes(focus) && last(w) < recent), last, rand, freqFirst)
-    : [];
-  const picked = new Set<string>();
-  for (const w of focusWords.slice(0, Math.ceil(n / 3))) picked.add(w.word);
-  for (const w of byStaleness(words, last, rand, freqFirst)) {
-    if (picked.size >= n) break;
-    picked.add(w.word);
-  }
-  // 섞어서 집중 키 낱말이 한쪽에 몰리지 않게
-  return [...picked].map((w) => ({ w, r: rand() })).sort((a, b) => a.r - b.r).map((x) => x.w);
+  const latest = Object.values(seen).reduce((a, b) => Math.max(a, b), -Infinity);
+  let cand = words.filter((w) => (seen[w.word] ?? -Infinity) < latest - 1); // 직전 2차례(latest, latest-1)에 나온 낱말 빼기
+  if (cand.length < count) cand = words;
+  const cache = new Map<string, number>();
+  const needOf = (k: string) => { let v = cache.get(k); if (v === undefined) { v = need(k); cache.set(k, v); } return v; };
+  const scored = cand.map((w) => {
+    const keys = [...new Set(w.codes)];
+    const ns = keys.map(needOf);
+    const max = Math.max(0, ...ns);
+    const mean = ns.reduce((a, b) => a + b, 0) / Math.max(1, ns.length);
+    const weight = (0.1 + max + 0.5 * mean) * Math.exp(-4 * w.rank);
+    return { w: w.word, key: Math.log(rand() || 1e-12) / weight };
+  });
+  scored.sort((a, b) => b.key - a.key);
+  return scored.slice(0, Math.min(count, scored.length)).map((x) => x.w);
 }
 
 /** 짧은 글 출제: 오래 안 나온 글감부터, 모두 합쳐 minChars 글자 이상 */

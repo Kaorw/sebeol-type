@@ -81,30 +81,41 @@ describe('짧은 글 글감', () => {
     expect(typeCodes(toCodes('kf, hf.'))).toBe('가, 나.');
   });
 });
-describe('낱말 다양화', () => {
-  it('한 차례 안에 중복 없음, 여러 차례에 걸쳐 1단계 낱말을 고르게 돈다', () => {
-    const words = pool(STAGES[0]).filter((w) => w.rank < 0.08); // 학습용 어휘(기본) 부분만
-    const seen: Record<string, number> = {};
-    const counts = new Map<string, number>();
-    for (let lesson = 0; lesson < 20; lesson++) {
-      const ws = makeLesson(words, 'Semicolon', seen);
-      expect(new Set(ws).size).toBe(ws.length);
-      ws.forEach((w) => { seen[w] = lesson; counts.set(w, (counts.get(w) ?? 0) + 1); });
-    }
-    // 20차례 × 14 = 280번 → 91개 낱말이 모두 한 번 이상 나와야 함
-    expect(counts.size).toBe(words.length);
-  });
-  it('빈도 어휘가 섞여도 자주 쓰는 낱말이 먼저 나온다', () => {
+describe('낱말 출제 (키 진도 가중)', () => {
+  // 고정 난수로 재현 가능하게
+  const seeded = (seed: number) => () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const keyRate = (ws: string[], code: string, words: ReturnType<typeof pool>) =>
+    ws.filter((w) => words.find((x) => x.word === w)!.codes.includes(code)).length / ws.length;
+
+  it('한 차례 안에 중복 없음, 직전 2차례 낱말은 다시 안 나옴', () => {
     const words = pool(STAGES[0]);
     const seen: Record<string, number> = {};
-    const ranks: number[] = [];
-    for (let lesson = 0; lesson < 5; lesson++) {
-      const ws = makeLesson(words, null, seen);
-      ws.forEach((w) => { seen[w] = lesson; ranks.push(words.find((x) => x.word === w)!.rank); });
+    const rand = seeded(1);
+    for (let lesson = 0; lesson < 10; lesson++) {
+      const ws = makeLesson(words, () => 0.5, seen, 14, rand);
+      expect(new Set(ws).size).toBe(14);
+      for (const w of ws) if (seen[w] !== undefined) expect(lesson - seen[w]).toBeGreaterThan(2);
+      ws.forEach((w) => { seen[w] = lesson; });
     }
-    expect(new Set(Object.keys(seen)).size).toBe(70); // 5차례 동안 겹치지 않음
-    const median = [...ranks].sort((a, b) => a - b)[35];
-    expect(median).toBeLessThan(0.3);
+  });
+
+  it('진도가 낮은 키가 든 낱말이 더 자주 나온다', () => {
+    const words = pool(STAGES[0]);
+    const rand = seeded(7);
+    const even: string[] = [], weak: string[] = [];
+    for (let i = 0; i < 40; i++) {
+      even.push(...makeLesson(words, () => 0.3, {}, 14, rand));
+      weak.push(...makeLesson(words, (k) => (k === 'KeyG' ? 1.5 : 0.1), {}, 14, rand));
+    }
+    expect(keyRate(weak, 'KeyG', words)).toBeGreaterThan(keyRate(even, 'KeyG', words) * 1.5);
+  });
+
+  it('자주 쓰는 낱말이 먼저 나온다', () => {
+    const words = pool(STAGES[0]);
+    const rand = seeded(3);
+    const ranks: number[] = [];
+    for (let i = 0; i < 20; i++) makeLesson(words, () => 0.5, {}, 14, rand).forEach((w) => ranks.push(words.find((x) => x.word === w)!.rank));
+    expect([...ranks].sort((a, b) => a - b)[Math.floor(ranks.length / 2)]).toBeLessThan(0.3);
   });
 });
 

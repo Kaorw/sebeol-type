@@ -5,7 +5,7 @@ import { STAGES, VOCAB, makeLesson, makeTextLesson, Word } from './app/curriculu
 import { SCHEME, SCHEMES, SchemeId, switchScheme } from './scheme';
 import { TEXTS, TEXT_SETS, creditOf, TextItem } from './app/texts';
 import { loadMine, saveMine, normalize } from './app/mytexts';
-import { load, save, record, score, weakest, stageReady, today, resetRecords, UNLOCK_SCORE, MIN_SAMPLES } from './app/stats';
+import { load, save, record, score, weakest, needOf, stageReady, today, resetRecords, UNLOCK_SCORE, MIN_SAMPLES } from './app/stats';
 import { Lesson } from './app/session';
 import type { Stroke } from './engine/reverse';
 
@@ -83,7 +83,11 @@ function newLesson(): void {
     const all = textItems();
     lessonItems = items.map((t) => all.find((x) => x.text === t)!).filter(Boolean);
   } else {
-    items = makeLesson(words, weakest(state, usedKeys(practiceKeys())), state.seen);
+    {
+      // 키 진도 가중: 열린 키 가운데 진도가 낮거나 자주 틀리는 키가 든 낱말을 더 자주
+      const open = new Set(practiceKeys());
+      items = makeLesson(words, (k) => (open.has(k) ? needOf(state, k) : 0), state.seen);
+    }
     items.forEach((w) => { state.seen[w] = state.lessonNo; });
   }
   save(state);
@@ -460,8 +464,16 @@ function afterPress(r: ReturnType<Lesson['press']>, pressed: string[]): void {
   if (!r) return;
   // 키별 기록: 모아치기는 글자에 든 키마다, 걸린 시간은 키 수로 나눠 한 타 값으로
   const per = r.ok && r.ms !== null ? r.ms / Math.max(1, r.units) : null;
-  for (const k of r.keys) record(state, k, { ok: r.ok, ms: per });
   lastWrongSet = new Set(r.ok ? [] : pressed.filter((c) => !r.keys.includes(c)).concat(r.keys.filter((c) => !pressed.includes(c))));
+  if (r.ok) {
+    for (const k of r.keys) record(state, k, { ok: true, ms: per });
+  } else {
+    // 틀린 키만 점수를 깎는다: 모아치기는 빠뜨리거나 더 누른 키, 이어치기는 잘못 누른 키
+    // (Shift만 틀리는 등 키 자체는 맞았으면 그 키)
+    const wrongSet = CHORD ? [...lastWrongSet] : pressed.filter((c) => !r.keys.includes(c));
+    const wrong = wrongSet.filter((k) => SCHEME.isHangulKey(k) || !!PUNCT[k] || !!SHIFT_PUNCT[k]);
+    for (const k of wrong.length ? wrong : r.keys) record(state, k, { ok: false, ms: null });
+  }
   lastChord = !r.ok && CHORD ? pressed : [];
   if (lesson.done) { finishLesson(); return; }
   renderLive();
