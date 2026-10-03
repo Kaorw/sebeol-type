@@ -2,7 +2,7 @@ import './style.css';
 import { keyLabel } from './layout/p2';
 import { PHYS_LAYOUTS, LAYOUT_ALIAS, PhysLayout, PhysKey, Finger, FINGER_NAME, FINGER_SHORT, shiftFor } from './layout/physical';
 import { STAGES, VOCAB, makeLesson, makeTextLesson, Word } from './app/curriculum';
-import { SCHEME, SCHEMES, SchemeId, switchScheme } from './scheme';
+import { SCHEME, SCHEMES, SchemeId, switchScheme, withFingers } from './scheme';
 import { TEXTS, TEXT_SETS, creditOf, TextItem } from './app/texts';
 import { loadMine, saveMine, normalize } from './app/mytexts';
 import { load, save, record, score, weakest, needOf, stageReady, today, resetRecords, UNLOCK_SCORE, MIN_SAMPLES } from './app/stats';
@@ -55,7 +55,7 @@ const textItems = (): TextItem[] => {
 };
 const textList = () => textItems().map((t) => t.text);
 let lessonItems: TextItem[] = [];
-const layout = (): PhysLayout => PHYS_LAYOUTS.find((l) => l.id === state.layout) ?? PHYS_LAYOUTS[0];
+const layout = (): PhysLayout => withFingers(PHYS_LAYOUTS.find((l) => l.id === state.layout) ?? PHYS_LAYOUTS[0], SCHEME);
 const fingerOf = (code: string): Finger | undefined => layout().keys.find((k) => k.code === code)?.finger;
 /** 열린 키 가운데 낱말에 실제로 나오는 키 (낱말이 없는 키는 숙련도를 쌓을 수 없어 해금 판정·집중 키에서 뺀다) */
 const usedKeys = (keys: string[]) => { const ws = poolFor(keys); return keys.filter((k) => ws.some((w) => w.codes.includes(k))); };
@@ -598,6 +598,9 @@ document.title = SCHEME.id === 'p2' ? '신세벌 타자' : '세모이 타자 · 
 $('brand-sub').textContent = SCHEME.brandSub;
 $('glyph-legend').innerHTML = `<span class="legend-title">글자 색</span>${SCHEME.legend.map(([c, j, t]) => `<span><b class="${c}">${esc(j)}</b> ${esc(t)}</span>`).join('')}`;
 $('scheme-credit').innerHTML = SCHEME.credit;
+// 세모이: 전체 배열·결합 법칙 안내 페이지 (새 탭). 누른 뒤 링크에 초점이 남으면 Enter가 다시 열므로 뗀다
+$('ref-link').hidden = SCHEME.id !== 'semoe';
+$('ref-link').addEventListener('click', (e) => (e.currentTarget as HTMLElement).blur());
 $('play-hint').innerHTML = CHORD
   ? '한 글자의 키를 <b>한꺼번에 눌렀다가 모두 떼면</b> 판정합니다. 판정은 물리 키 자리로 하므로 한/영 상태와 상관없습니다. <kbd>Esc</kbd> 새 글'
   : '키보드로 바로 치세요. 판정은 물리 키 자리로 하므로 한/영 상태와 상관없습니다. <kbd>Esc</kbd> 새 글';

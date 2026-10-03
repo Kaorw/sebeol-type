@@ -4,6 +4,7 @@ import { P2, PUNCT, SHIFT_PUNCT } from './layout/p2';
 import { SEMOE, SEMOE_PUNCT, SEMOE_SHIFT_PUNCT, SEMOE_SUB } from './layout/semoe';
 import { charStrokes as p2Strokes, flatCodes as p2Flat, typeable as p2Typeable, Stroke } from './engine/reverse';
 import { typeCodes } from './engine/automaton';
+import type { Finger, PhysLayout } from './layout/physical';
 import { semoeCharStrokes, semoeFlatCodes, semoeTypeable, chordText } from './engine/semoe';
 
 export type SchemeId = 'p2' | 'semoe';
@@ -32,6 +33,8 @@ export interface Scheme {
   /** 치는 중인 글자 미리 보기 (이어치기: 이미 친 타, 모아치기: 누르고 있는 키) */
   preview(codes: string[]): string;
   legend: [string, string, string][]; // [색 클래스, 낱자, 설명]
+  /** 물리 배열의 손가락 배정과 다르게 치는 키 (자판 설명서 기준) */
+  fingers?: Record<string, Finger>;
   credit: string; // 배열 출처 (HTML)
 }
 
@@ -124,20 +127,32 @@ const semoe: Scheme = {
   role(code) {
     const t = SEMOE[code];
     if (!t) return '';
-    if (t === 'v.') return '겹홀소리용 ㅗ';
+    if (t === 'v.') return '모음⇧ (겹홀소리용 ㅗ)';
     const name = t[0] === 'c' ? '초성' : t[0] === 'v' ? '중성' : '받침';
     return `${name} ${t.slice(1)}${SEMOE_SUB[code] ? ` · 모아서 ${SEMOE_SUB[code]}` : ''}`;
   },
   preview: (codes) => chordText(codes),
   legend: [
     ['c-cho', 'ㄱ', '초성 (오른손)'],
-    ['c-jung', 'ㅏ', '중성 (왼손, . 은 겹홀소리용 ㅗ)'],
-    ['c-jong', 'ㄴ', '받침 (왼손, ; 은 ㅆ)'],
+    ['c-jung', 'ㅏ', '중성 (왼손, . 은 모음⇧ ㅗ)'],
+    ['c-jong', 'ㄴ', '받침 (왼손, ; 은 종성⇧ ㅆ)'],
   ],
+  // 공식 타자법: "p ; . 는 소지로 치시는 게 원칙" (blog.naver.com/eekdland/220239514856)
+  fingers: { Period: 'R5' },
   credit: '배열: <a href="https://github.com/Sinseiki/Semo-e_keyboard" target="_blank" rel="noopener">세모이</a> (신세기, CC BY-SA 4.0)',
 };
 
 export const SCHEMES: Record<SchemeId, Scheme> = { p2, semoe };
+
+/** 물리 배열에 자판별 손가락 배정을 덮어쓴 것 */
+const fingered = new Map<string, PhysLayout>();
+export function withFingers(L: PhysLayout, scheme: Scheme): PhysLayout {
+  const f = scheme.fingers;
+  if (!f) return L;
+  const id = `${scheme.id}:${L.id}`;
+  if (!fingered.has(id)) fingered.set(id, { ...L, keys: L.keys.map((k) => (f[k.code] ? { ...k, finger: f[k.code] } : k)) });
+  return fingered.get(id)!;
+}
 
 const KEY = 'sebeol-type.scheme';
 function initial(): SchemeId {

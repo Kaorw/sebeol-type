@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>세모이 배열 · 신세벌 타자</title>
+<meta name="description" content="세모이(세벌식 모아치기 e) 자판의 전체 배열과 첫소리·가운뎃소리·받침 결합 법칙을 한 페이지에 정리했습니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+</head>
+<body>
+<div class="app ref">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-name">세모이 배열과 결합 법칙</span>
+      <span class="brand-sub">세모이(세벌식 모아치기 e) · 요즘 한글</span>
+    </div>
+    <a class="btn btn-strong" href="./?scheme=semoe">연습 화면으로</a>
+  </header>
+
+  <nav class="ref-toc" aria-label="차례">
+    <a href="#basics">치는 법</a>
+    <a href="#layout">전체 배열</a>
+    <a href="#cho">첫소리</a>
+    <a href="#jung">가운뎃소리</a>
+    <a href="#jong">받침</a>
+    <a href="#lookup">글자 찾아보기</a>
+    <a href="#punct">숫자·기호</a>
+  </nav>
+
+  <section class="ref-sec" id="basics">
+    <h2>치는 법</h2>
+    <ul class="ref-list">
+      <li>한 글자를 이루는 키를 <b>한꺼번에 눌렀다가 모두 뗍니다.</b> 누르는 차례는 상관없고, 마지막 키를 떼는 순간 글자가 들어갑니다.</li>
+      <li><b class="c-cho">오른손은 첫소리</b>, <b class="c-jung">왼손 가운데 두 열은 가운뎃소리</b>, <b class="c-jong">왼손 바깥 두 열은 받침</b>을 맡습니다.</li>
+      <li>배열에 없는 낱자는 다른 키와 모아서 만듭니다. 오른손 소지의 <span class="kc">;</span>은 <b>종성⇧</b>(종성 시프트)으로, 혼자 누르면 받침 ㅆ이고 다른 받침과 모으면 ㅊ·ㅍ·ㅈ 같은 받침이 됩니다. <span class="kc">.</span>은 <b>모음⇧</b>(모음 시프트, 오른쪽 ㅗ)으로, 다른 홀소리와 모아 ㅘ·ㅑ·ㅛ 같은 홀소리를 만듭니다.</li>
+      <li>글자 키와 <span class="kc">Space</span>를 함께 누르면 띄어쓰기까지 한 번에 들어갑니다.</li>
+    </ul>
+  </section>
+
+  <section class="ref-sec" id="layout">
+    <h2>전체 배열</h2>
+    <p class="ref-sub">키 가운데 큰 글자는 그 키 하나로 나오는 낱자, 오른쪽 위 작은 글자는 <span class="kc">;</span> 또는 <span class="kc">.</span>과 함께 눌렀을 때 나오는 낱자입니다. 바탕색은 맡는 손가락입니다.</p>
+    <div class="ctl">
+      <span class="ctl-label" id="layout-label">배열</span>
+      <div class="seg" id="layout-seg" role="group" aria-labelledby="layout-label"></div>
+    </div>
+    <div class="kbd-wrap" id="kbd-wrap"><div class="kbd" id="kbd"></div></div>
+    <div class="ref-legend">
+      <span><b class="c-cho">ㄱ</b> 첫소리 (오른손)</span>
+      <span><b class="c-jung">ㅏ</b> 가운뎃소리 (왼손)</span>
+      <span><b class="c-jong">ㄴ</b> 받침 (왼손)</span>
+      <span>새끼 <i class="sw z5"></i></span><span>약지 <i class="sw z4"></i></span><span>중지 <i class="sw z3"></i></span><span>검지 <i class="sw z2"></i></span>
+    </div>
+  </section>
+
+  <section class="ref-sec" id="cho">
+    <h2>첫소리 <span class="c-cho">오른손</span></h2>
+    <div id="cho-groups"></div>
+  </section>
+
+  <section class="ref-sec" id="jung">
+    <h2>가운뎃소리 <span class="c-jung">왼손 검지·중지</span></h2>
+    <div id="jung-groups"></div>
+  </section>
+
+  <section class="ref-sec" id="jong">
+    <h2>받침 <span class="c-jong">왼손 새끼·약지, 오른손 ;</span></h2>
+    <div id="jong-groups"></div>
+  </section>
+
+  <section class="ref-sec" id="lookup">
+    <h2>글자 찾아보기</h2>
+    <p class="ref-sub">글자를 넣으면 한 번에 누를 키를 보여 줍니다. 이 연습기가 권하는 조합입니다.</p>
+    <label class="sr" for="lookup-input">찾을 글</label>
+    <input id="lookup-input" class="ref-input" type="text" value="과 왜 있 좋 읽 했다" autocomplete="off" spellcheck="false">
+    <div class="lookup" id="lookup-out" aria-live="polite"></div>
+  </section>
+
+  <section class="ref-sec" id="punct">
+    <h2>숫자·기호</h2>
+    <div class="table-wrap"><table class="ktable" id="punct-table"></table></div>
+  </section>
+
+  <footer class="foot">
+    <span>배열: <a href="https://github.com/Sinseiki/Semo-e_keyboard" target="_blank" rel="noopener">세모이</a> (신세기, CC BY-SA 4.0) · 공식 안내: <a href="https://blog.naver.com/eekdland/224316363866" target="_blank" rel="noopener">자판 배열</a>, <a href="https://blog.naver.com/eekdland/220239514856" target="_blank" rel="noopener">입력 방식</a> · 결합 규칙: <a href="https://github.com/Sinseiki/ohi" target="_blank" rel="noopener">온라인 한글 입력기 세모이 구현</a>을 따름 · 약어·옛한글은 빠져 있습니다.</span>
+    <span class="gh">GitHub: <a href="https://github.com/Kaorw/sebeol-type" target="_blank" rel="noopener">github.com/Kaorw/sebeol-type</a></span>
+  </footer>
+</div>
+<script type="module" src="/src/semoe-ref.ts"></script>
+</body>
+</html>

@@ -10,6 +10,7 @@
 - `src/layout/physical.ts` — 물리 배열(일반/오쏘리니어/스플릿/Ergo)과 손가락 배정
 - `src/layout/semoe.ts` — 세모이 기본 배열과 모아치기 결합 규칙(요즘 한글)
 - `src/engine/semoe.ts` — 세모이: 키 묶음 → 글자, 글자 → 권하는 키 묶음, 받아 주는 조합 판정
+- `semoe.html` + `src/semoe-ref.ts` — 세모이 전체 배열·결합 법칙 안내 페이지. 표는 `chordFor`/`otherChords`로 만든다. 일반 빌드에만 들어가고 `build:single`에는 빠진다
 - `src/scheme.ts` — 자판(P2/세모이) 묶음. 화면·출제·통계는 고른 자판만 본다
 - `src/engine/automaton.ts` — 정방향: 키 → 글자 (첫가끝 갈마들이)
 - `src/engine/reverse.ts` — 역방향: 글자 → 키 순서 (하이라이트용)

@@ -73,12 +73,12 @@ export function chordText(codes: string[], shift = false): string {
 const CAT_KEYS: Record<'c' | 'v' | 'j', string[]> = { c: [], v: [], j: [] };
 for (const [code, t] of Object.entries(SEMOE)) CAT_KEYS[t[0] as 'c' | 'v' | 'j'].push(code);
 
-// 손가락 겹침 판정용 열(표준 키보드 기준). 같은 손가락 두 키를 한꺼번에 누르기는 어렵다
+// 손가락 겹침 판정용 열(표준 키보드 기준, . 은 공식 타자법대로 소지). 같은 손가락 두 키를 한꺼번에 누르기는 어렵다
 const COL: Record<string, string> = {
   KeyQ: 'L5', KeyA: 'L5', KeyZ: 'L5', KeyW: 'L4', KeyS: 'L4', KeyX: 'L4', KeyE: 'L3', KeyD: 'L3', KeyC: 'L3',
   KeyR: 'L2', KeyF: 'L2', KeyV: 'L2', KeyT: 'L2', KeyG: 'L2', KeyB: 'L2',
   KeyY: 'R2', KeyH: 'R2', KeyN: 'R2', KeyU: 'R2', KeyJ: 'R2', KeyM: 'R2', KeyI: 'R3', KeyK: 'R3', Comma: 'R3',
-  KeyO: 'R4', KeyL: 'R4', Period: 'R4', KeyP: 'R5', Semicolon: 'R5', Slash: 'R5',
+  KeyO: 'R4', KeyL: 'R4', KeyP: 'R5', Period: 'R5', Semicolon: 'R5', Slash: 'R5',
 };
 const clash = (keys: string[]) => new Set(keys.map((k) => COL[k])).size < keys.length;
 
@@ -115,9 +115,11 @@ for (const cat of ['c', 'v', 'j'] as const) {
 
 // OHI 방식으로는 되지만 세모이 타자연습(semoi-typing.pages.dev)이 받지 않는 3키 조합 등은 빼서
 // 권하는 조합만 익히도록 한다. (2026-09 대조)
+// 받침 ㅆ = ㅅ+ㅇ(Q+A)은 세모이 타자연습이 받지 않지만 공식 입력 방식 안내(blog.naver.com/eekdland/220239514856)에
+// 더해치기합성으로 나와 있어 받아 준다. (2026-10 대조)
 const REJECT_LIST: [Tok, string[]][] = [
   ['vㅞ', ['KeyR', 'KeyD', 'Period']], ['vㅞ', ['KeyR', 'KeyD', 'KeyV']], ['vㅞ', ['KeyR', 'KeyD', 'KeyB']],
-  ['jㅆ', ['KeyQ', 'KeyA']], ['jㄻ', ['KeyQ', 'KeyW', 'KeyS']], ['jㅋ', ['Semicolon', 'KeyE', 'KeyA']],
+  ['jㄻ', ['KeyQ', 'KeyW', 'KeyS']], ['jㅋ', ['Semicolon', 'KeyE', 'KeyA']],
   ['jㄳ', ['Semicolon', 'KeyE', 'KeyX']], ['jㅀ', ['KeyA', 'KeyS', 'KeyZ']], ['jㄾ', ['Semicolon', 'KeyA', 'KeyZ']],
 ];
 const sig = (keys: string[]) => [...keys].sort().join('+');
@@ -129,6 +131,11 @@ for (const [tok, list] of Object.entries(ALT)) {
 }
 
 export function chordFor(tok: Tok): string[] | undefined { return BEST[tok]; }
+
+/** 권하는 조합 말고도 받아 주는 키 묶음들 (배열 안내용) */
+export function otherChords(tok: Tok): string[][] {
+  return (ALT[tok] ?? []).slice(1).filter((k) => !REJECT.has(`${tok}:${sig(k)}`));
+}
 
 /** 누른 키 묶음이 이 글자를 치는 올바른 모아치기인가 (권하는 조합이 아니어도 되는 조합이면 참) */
 export function chordMatches(ch: string, codes: string[]): boolean {

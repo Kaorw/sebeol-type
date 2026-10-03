@@ -39,6 +39,7 @@ describe('세모이 모아치기 엔진', () => {
     expect(chordMatches('가', ['KeyK', 'KeyD'])).toBe(false);
     expect(chordMatches('가', ['KeyK', 'KeyF', 'KeyX'])).toBe(false); // 받침이 더 있음
     expect(chordMatches('웨', ['KeyJ', 'KeyR', 'KeyD', 'KeyB'])).toBe(false); // 세모이 타자연습이 받지 않는 3키 ㅞ
+    expect(chordMatches('있', ['KeyJ', 'KeyD', 'KeyQ', 'KeyA'])).toBe(true); // 받침 ㅆ = ㅅ+ㅇ (공식 더해치기합성)
   });
 
   it('키 차례와 상관없이 같은 글자', () => {

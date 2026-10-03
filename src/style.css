@@ -226,3 +226,37 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); o
   .chip { flex: 0 0 34px; }
 }
 .foot .gh { flex-basis: 100%; }
+
+/* ── 세모이 배열·결합 법칙 페이지 ── */
+.ref-link { font-size: 12.5px; color: var(--accent); text-decoration: none; border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 8px; align-self: center; }
+.ref-link:hover { border-color: var(--accent); }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.ref { gap: 28px; }
+.ref .top { flex-wrap: wrap; }
+.ref-toc { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; margin-top: -12px; }
+.ref-toc a { color: var(--muted); text-decoration: none; }
+.ref-toc a:hover { color: var(--accent); }
+.ref-sec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 16px; }
+.ref-sec h2 { margin: 0; font-size: 18px; font-weight: 600; display: flex; gap: 10px; align-items: baseline; }
+.ref-sec h2 > span { font-size: 13px; font-weight: 500; }
+.ref-group { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.ref-group h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.ref-sub { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+.ref-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; line-height: 1.7; }
+.ref-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 12px; color: var(--muted); }
+.ref-legend span { display: flex; align-items: center; gap: 6px; }
+.ref .kbd-wrap { overflow: hidden; }
+.kc { font-family: var(--mono); font-size: 0.92em; border: 1px solid var(--line-2); border-radius: 4px; padding: 0 5px; background: #242320; white-space: nowrap; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.card { background: var(--surface); border-radius: 10px; padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.card .cj { font-size: 26px; font-weight: 600; min-width: 1.2em; text-align: center; }
+.card .chord { display: flex; align-items: center; gap: 4px; }
+.card .plus { color: var(--faint); }
+.card .alt { flex-basis: 100%; font-size: 11.5px; color: var(--faint); }
+.kk { display: inline-flex; flex-direction: column; align-items: center; min-width: 34px; padding: 3px 6px 4px; border-radius: 6px; background: #2b2925; border: 1px solid var(--line-2); line-height: 1.2; }
+.kk b { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+.kk i { font-style: normal; font-size: 11px; color: var(--muted); }
+.ref-input { width: min(420px, 100%); background: var(--well); color: var(--text); border: 1px solid var(--line-2); border-radius: 8px; padding: 10px 12px; font: inherit; font-size: 16px; }
+.ref-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.lookup { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.ref .ktable td { white-space: normal; }
